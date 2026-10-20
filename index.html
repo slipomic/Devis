@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Devis Reno & Montage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1c1e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Devis">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Mise en page: bandeau + onglets noirs + liste de prestations, barre de total fixe en bas (comme le site Reno & Montage). */
+:root {
+  --bg: #f1efeb;
+  --ink: #1c1c1e;
+  --muted: #7d7b77;
+  --line: #d9d6d0;
+  --orange: #f26f1a;
+  --orange-d: #c4500a;
+  --white: #ffffff;
+  --display: "Oswald", "Arial Narrow", Arial, sans-serif;
+  --body: "Inter", Arial, Helvetica, sans-serif;
+  --mono: "JetBrains Mono", "Courier New", monospace;
+  /* feuille de devis */
+  --p-ink: #1c1c1e; --p-mute: #5a5a5a; --p-tint: #f2f0ec; --p-line: #d8d6d2;
+  --p-orange: #e8610c; --p-orange-d: #c4500a; --p-orange-t: #b84a08; --p-total: #f26f1a;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: 16px; line-height: 1.4;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+.stripe { height: 22px; background: repeating-linear-gradient(115deg, var(--orange) 0 22px, var(--ink) 22px 44px); }
+.top { padding: 22px max(20px, env(safe-area-inset-left, 0px)) 18px; }
+.top .tag { font-family: var(--mono); font-size: 12px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+.top h1 { margin: 6px 0 0; font-family: var(--display); font-weight: 700; font-size: 48px; line-height: 1; letter-spacing: .5px; }
+.top h1 span { color: var(--orange); }
+
+.tabs { position: sticky; top: 0; z-index: 5; display: flex; overflow-x: auto; background: var(--ink); scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: 1 0 auto; border: 0; background: transparent; color: #8f8d89; font-family: var(--display); font-weight: 500; font-size: 20px; letter-spacing: .5px; text-transform: uppercase; padding: 20px 22px 16px; border-bottom: 5px solid transparent; white-space: nowrap; }
+.tabs button[aria-selected="true"] { color: #fff; border-bottom-color: var(--orange); }
+
+.panel { display: none; padding: 8px max(20px, env(safe-area-inset-left, 0px)) 24px; max-width: 820px; margin: 0 auto; }
+.panel.on { display: block; }
+.grp { font-family: var(--display); font-weight: 500; font-size: 19px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--orange); margin: 28px 0 6px; }
+.item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.info { min-width: 0; flex: 1; }
+.nm { font-size: 19px; font-weight: 600; line-height: 1.2; }
+.sb { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.pr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.pr input { width: 68px; height: 34px; border: 1px solid var(--line); border-radius: 4px; background: #fff; text-align: right; padding: 0 6px; font-family: var(--mono); font-weight: 700; font-size: 15px; color: var(--ink); }
+.pr .rg { font-family: var(--mono); font-size: 12px; }
+.step { display: flex; flex-shrink: 0; background: var(--ink); border-radius: 6px; overflow: hidden; }
+.step button { width: 44px; height: 52px; border: 0; background: transparent; color: var(--orange); font-size: 26px; font-weight: 700; line-height: 1; }
+.step input { width: 54px; height: 44px; align-self: center; margin: 0; border: 0; border-radius: 2px; background: #fff; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 20px; padding: 0; color: var(--ink); -moz-appearance: textfield; }
+.step input::-webkit-outer-spin-button, .step input::-webkit-inner-spin-button, .m2 input::-webkit-outer-spin-button, .m2 input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.m2 { flex-shrink: 0; width: 140px; height: 52px; border: 2px solid var(--ink); border-radius: 6px; }
+.m2 input { width: 100%; height: 100%; border: 0; background: transparent; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 20px; padding: 0 8px; -moz-appearance: textfield; }
+.m2 input::placeholder { color: #9a9894; }
+
+.cond { background: var(--ink); color: #f1efeb; border-radius: 8px; padding: 22px 24px; margin-top: 28px; }
+.cond h3 { margin: 0 0 12px; font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: 2px; color: var(--orange); text-transform: uppercase; }
+.cond ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-family: var(--mono); font-size: 15px; }
+.cond li::before { content: "▸ "; color: var(--orange); font-size: 11px; }
+
+.field { display: flex; flex-direction: column; gap: 5px; margin-top: 14px; }
+.field label { font-family: var(--mono); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.field input.t { height: 50px; border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 0 14px; width: 100%; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.room { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-top: 12px; }
+.room .rt { display: flex; gap: 10px; align-items: flex-end; }
+.room .rt .field { flex: 1; margin-top: 0; }
+.room .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.room .three .field { margin-top: 0; }
+.room .three label { font-size: 10.5px; letter-spacing: .8px; }
+.room .three input { height: 46px; border: 1px solid var(--line); border-radius: 6px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 17px; width: 100%; padding: 0 4px; }
+.x { width: 50px; height: 50px; flex-shrink: 0; border: 1px solid var(--ink); border-radius: 6px; background: transparent; font-size: 24px; }
+.btn { min-height: 50px; padding: 0 20px; border-radius: 6px; border: 2px solid var(--ink); background: transparent; font-weight: 600; font-size: 16px; }
+.btn.fill { background: var(--orange); border-color: var(--orange); color: var(--ink); }
+.btn.dark { background: var(--ink); color: #fff; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+.hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+#fallback { width: 100%; min-height: 140px; margin-top: 8px; border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--ink); border-top: 5px solid var(--orange); color: #fff; padding: 14px max(20px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bar .lab { font-family: var(--display); font-size: 19px; letter-spacing: 1px; color: #9a9894; text-transform: uppercase; line-height: 1.1; }
+.bar .cnt { font-size: 14px; color: #9a9894; }
+.bar .tot { font-family: var(--mono); font-weight: 700; font-size: 34px; color: var(--orange); line-height: 1; white-space: nowrap; }
+.bar .rz { height: 46px; padding: 0 16px; border: 1px solid #4a4a4d; border-radius: 6px; background: transparent; color: #cfcdc8; font-size: 15px; }
+
+/* ---------- Feuille de devis ---------- */
+.sheet { background: #fff; color: var(--p-ink); font-family: var(--body); overflow: hidden; margin-top: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 8px 26px rgba(0,0,0,.14); }
+.sheet .stripe2 { height: 20px; background: repeating-linear-gradient(115deg, var(--p-orange) 0 20px, var(--p-ink) 20px 40px); }
+.sheet .head { background: var(--p-tint); border-bottom: 4px solid var(--p-orange); padding: 22px clamp(14px, 5vw, 44px) 20px; display: flex; flex-wrap: wrap; gap: 14px 24px; justify-content: space-between; }
+.sheet .eyebrow { font-size: 9.5px; letter-spacing: 2.2px; color: var(--p-mute); }
+.sheet .brand { margin: 4px 0 6px; font-family: var(--display); font-size: clamp(34px, 9vw, 52px); font-weight: 700; line-height: 1; }
+.sheet .brand span { color: var(--p-orange); }
+.sheet .small { font-size: 12px; color: var(--p-mute); line-height: 1.6; }
+.sheet .meta { text-align: right; display: flex; flex-direction: column; gap: 2px; }
+.sheet .meta .doc { font-family: var(--display); font-size: 36px; font-weight: 700; line-height: 1; margin-bottom: 4px; color: var(--p-ink); }
+.sheet .main { padding: 22px clamp(14px, 5vw, 44px) 0; display: flex; flex-direction: column; gap: 18px; }
+.sheet .parties { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+.sheet .party { background: var(--p-tint); padding: 12px 16px; font-size: 13.5px; line-height: 1.55; }
+.sheet .party .lbl { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: var(--p-orange-t); }
+.sheet .party b { font-size: 15px; }
+.sheet .objet { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.25; }
+.sheet .objet-sub { font-size: 12px; color: var(--p-mute); margin-top: 3px; }
+.sheet .tbl { display: flex; flex-direction: column; }
+.sheet .tr { display: grid; grid-template-columns: minmax(0, 1fr) 40px 34px 62px 78px; gap: 4px; align-items: center; padding: 8px 10px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+@media (min-width: 640px) { .sheet .tr { grid-template-columns: minmax(0, 1fr) 56px 52px 96px 100px; font-size: 13px; padding: 9px 12px; } }
+.sheet .tr > :nth-child(n+2) { text-align: right; }
+.sheet .tr > :nth-child(2), .sheet .tr > :nth-child(3) { text-align: center; }
+.sheet .th { background: var(--p-ink); color: #fff; font-size: 11px; font-weight: 700; }
+.sheet .sec { background: var(--p-orange-d); color: #fff; font-size: 13px; font-weight: 700; padding: 8px 12px; text-transform: uppercase; letter-spacing: .5px; }
+.sheet .line { border-bottom: 1px solid var(--p-line); }
+.sheet .sub { display: flex; justify-content: flex-end; gap: 24px; background: var(--p-tint); font-size: 13px; font-weight: 700; padding: 8px 12px; font-variant-numeric: tabular-nums; }
+.sheet .empty { padding: 18px 12px; font-size: 13px; color: var(--p-mute); border-bottom: 1px solid var(--p-line); }
+.sheet .totalbox { align-self: flex-end; width: min(100%, 320px); background: var(--p-ink); color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; }
+.sheet .totalbox span { font-size: 13px; font-weight: 700; letter-spacing: .6px; }
+.sheet .totalbox b { font-family: var(--display); font-size: 34px; line-height: 1; color: var(--p-total); }
+.sheet .tva { align-self: flex-end; margin-top: -10px; font-size: 10.5px; font-style: italic; color: var(--p-mute); }
+.sheet .cnd h3 { margin: 0 0 8px; font-size: 12px; letter-spacing: .8px; color: var(--p-orange-t); }
+.sheet .cnd ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sheet .cnd li { display: flex; gap: 10px; align-items: baseline; font-size: 12.5px; }
+.sheet .cnd li::before { content: ""; width: 7px; height: 7px; background: var(--p-orange); flex-shrink: 0; }
+.sheet .sign { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 22px; margin-bottom: 24px; }
+.sheet .sign div { border: 1px solid #b9b6b0; min-height: 84px; padding: 10px 14px; font-size: 11.5px; font-weight: 700; color: var(--p-mute); }
+.sheet .foot { border-top: 5px solid var(--p-orange); background: var(--p-ink); color: #d9d7d2; font-size: 11.5px; text-align: center; padding: 16px 20px; }
+.sheet .sec, .sheet .tr, .sheet .sub { break-inside: avoid; }
+
+@media print {
+  @page { size: A4; margin: 0; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { background: #fff; padding: 0; height: auto; }
+  .stripe, .top, .tabs, .bar, .noprint { display: none !important; }
+  .panel { display: none !important; }
+  #p-devis { display: block !important; padding: 0; max-width: none; }
+  .sheet { box-shadow: none; margin: 0; }
+  .sheet .head { padding-block: 16px 14px; }
+  .sheet .main { gap: 12px; padding-top: 16px; }
+  .sheet .sign { margin-bottom: 14px; }
+  .sheet .sign div { min-height: 64px; }
+  .sheet .tr { padding-block: 6px; }
+  .sheet .foot { padding-block: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<header class="top">
+  <div class="tag">Main d'œuvre seule · Matériel non inclus</div>
+  <h1>RENO &amp; <span>MONTAGE</span></h1>
+</header>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Rubriques">
+  <button type="button" role="tab" data-tab="client">Client</button>
+  <button type="button" role="tab" data-tab="montage">Montage</button>
+  <button type="button" role="tab" data-tab="demontage">Démontage</button>
+  <button type="button" role="tab" data-tab="carrelage">Carrelage</button>
+  <button type="button" role="tab" data-tab="peinture">Peinture int.</button>
+  <button type="button" role="tab" data-tab="devis">Devis</button>
+</nav>
+
+<main>
+  <section class="panel" id="p-client">
+    <div class="grp">Client</div>
+    <div class="field"><label for="c-name">Nom</label><input class="t" id="c-name" data-k="client.name" autocomplete="off" placeholder="Prénom Nom"></div>
+    <div class="field"><label for="c-l1">Adresse</label><input class="t" id="c-l1" data-k="client.l1" autocomplete="off" placeholder="Numéro et rue"></div>
+    <div class="field"><label for="c-l2">Code postal et ville</label><input class="t" id="c-l2" data-k="client.l2" autocomplete="off" placeholder="92000 Nanterre"></div>
+    <div class="grp">Devis</div>
+    <div class="two">
+      <div class="field"><label for="d-date">Date</label><input class="t" id="d-date" data-k="date" type="date"></div>
+      <div class="field"><label for="d-validity">Validité (jours)</label><input class="t" id="d-validity" data-k="validity" type="number" inputmode="numeric" min="1"></div>
+    </div>
+    <div class="field"><label for="d-number">Numéro</label><input class="t" id="d-number" data-k="number" autocomplete="off"></div>
+    <div class="field"><label for="d-objet">Objet (automatique si vide)</label><input class="t" id="d-objet" data-k="objet" autocomplete="off"></div>
+  </section>
+
+  <section class="panel" id="p-montage"></section>
+  <section class="panel" id="p-demontage"></section>
+  <section class="panel" id="p-carrelage"></section>
+  <section class="panel" id="p-peinture"></section>
+
+  <section class="panel" id="p-devis">
+    <div class="actions noprint">
+      <button class="btn fill" id="pdf" type="button">Enregistrer en PDF</button>
+      <button class="btn" id="copy" type="button">Copier en texte</button>
+    </div>
+    <p class="hint noprint">PDF : dans la fenêtre qui s'ouvre, choisis « Enregistrer au format PDF », puis envoie le fichier au client.</p>
+    <p class="hint noprint" id="status" role="status"></p>
+    <textarea id="fallback" class="noprint" hidden readonly aria-label="Texte du devis à copier"></textarea>
+    <article class="sheet" id="sheet"></article>
+  </section>
+</main>
+
+<div class="bar">
+  <div><div class="lab">Total estimé</div><div class="cnt" id="cnt">0 ligne sélectionnée</div></div>
+  <div class="tot" id="tot">0 €</div>
+  <button class="rz" id="reset" type="button">Réinit.</button>
+</div>
+
+<script>
+(function () {
+  var KEY = 'devis-reno-montage-v2';
+  var COND = '<div class="cond"><h3>Conditions</h3><ul><li>Fournitures à la charge du client</li><li>Forfait minimum d\'intervention : 50 €</li><li>Taux horaire complément : 25-40 €/h</li><li>Devis gratuit sur place</li></ul></div>';
+
+  /* Tarifs du site Reno & Montage. lo/hi = fourchette; le prix de départ est lo (sauf indication d). */
+  var CATS = {
+    montage: { label: 'montage', groups: [
+      { t: 'Petit mobilier', items: [
+        { id: 'm-chaise', n: 'Chaise', s: 'à l\'unité', lo: 10, hi: 15 },
+        { id: 'm-tbasse', n: 'Table basse', lo: 30 } ] },
+      { t: 'Rangement & couchage', items: [
+        { id: 'm-tv', n: 'Meuble TV', lo: 50 },
+        { id: 'm-comm', n: 'Commode', lo: 50 },
+        { id: 'm-arm2', n: 'Armoire 2 portes', lo: 60 },
+        { id: 'm-arm3', n: 'Armoire 3 portes', s: 'grande capacité', lo: 90 },
+        { id: 'm-lit1', n: 'Lit simple', s: 'sommier + tête de lit', lo: 60 },
+        { id: 'm-litr', n: 'Lit avec rangements', lo: 100 },
+        { id: 'm-dress', n: 'Dressing', lo: 150 } ] },
+      { t: 'Cuisine', items: [
+        { id: 'm-celem', n: 'Élément de cuisine', s: 'meuble bas/haut, unité', lo: 30, hi: 50 },
+        { id: 'm-ccomp', n: 'Cuisine complète', s: 'installation intégrale', lo: 300, hi: 800 } ] } ] },
+    demontage: { label: 'démontage', groups: [ { t: '', items: [
+      { id: 'd-chaise', n: 'Chaise', s: 'à l\'unité', lo: 5, hi: 8 },
+      { id: 'd-tbasse', n: 'Table basse / d\'appoint', lo: 10, hi: 18 },
+      { id: 'd-tv', n: 'Meuble TV', lo: 25 },
+      { id: 'd-comm', n: 'Commode', lo: 35 },
+      { id: 'd-arm2', n: 'Armoire 2 portes', lo: 25, hi: 35 },
+      { id: 'd-arm3', n: 'Armoire 3 portes', lo: 25, hi: 35 },
+      { id: 'd-lit1', n: 'Lit simple', lo: 20, hi: 30 },
+      { id: 'd-litr', n: 'Lit avec rangements', lo: 35, hi: 50 } ] } ] },
+    carrelage: { label: 'carrelage', groups: [ { t: 'Surfaces (par m²)', items: [
+      { id: 'c-sol', n: 'Pose carrelage sol', lo: 40, m2: 1 },
+      { id: 'c-faience', n: 'Pose faïence murale', lo: 45, m2: 1 },
+      { id: 'c-depose', n: 'Dépose ancien carrelage', lo: 15, m2: 1 },
+      { id: 'c-joint', n: 'Joint d\'étanchéité', lo: 15, m2: 1 } ] } ] },
+    peinture: { label: 'peinture intérieure', groups: [ { t: 'Éléments (à l\'unité)', items: [
+      { id: 'p-porte', n: 'Porte', s: '2 faces', lo: 30, hi: 50, l: 'Porte (2 faces)' },
+      { id: 'p-rad', n: 'Radiateur', lo: 40, hi: 60 } ] } ] }
+  };
+  var RATES = [
+    { id: 'r-pl', n: 'Plafond', lo: 15, hi: 18, d: 18, l: 'Peinture plafond', f: 'pl' },
+    { id: 'r-mu', n: 'Mur - 1 couche simple', lo: 10, hi: 12, d: 10, l: 'Peinture murs - 1 couche simple', f: 'mu' },
+    { id: 'r-mp', n: 'Mur - avec préparation', s: 'rebouchage, ponçage', lo: 12, hi: 15, d: 12, l: 'Peinture murs - avec préparation', f: 'mp' }
+  ];
+  var ALL = {};
+  Object.keys(CATS).forEach(function (k) { CATS[k].groups.forEach(function (g) { g.items.forEach(function (it) { it.cat = k; ALL[it.id] = it; }); }); });
+  RATES.forEach(function (r) { ALL[r.id] = r; });
+
+  var uid = 0;
+  function nid() { uid += 1; return 'r' + uid + Date.now().toString(36); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function todayIso() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function defPrices() { var p = {}; Object.keys(ALL).forEach(function (id) { var it = ALL[id]; p[id] = it.d != null ? it.d : it.lo; }); return p; }
+  function defaults() {
+    return { client: { name: 'Nadège Gilbert', l1: '1 avenue des Bois Blanc', l2: '78140 La Celle-Saint-Cloud' },
+      date: todayIso(), number: '', objet: '', validity: 30, pr: defPrices(), q: {},
+      rooms: [ { id: nid(), name: 'Salon', pl: 20, mu: 21, mp: 0 }, { id: nid(), name: 'Entrée', pl: 9, mu: 14, mp: 0 } ] };
+  }
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.client && s.rooms && s.pr) { var d = defPrices(); Object.keys(d).forEach(function (k) { if (s.pr[k] == null) s.pr[k] = d[k]; }); s.q = s.q || {}; return s; } } catch (e) {}
+    return defaults();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  var state = load();
+
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var eur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+  function money(n) { return eur.format(n).replace(/[  ]/g, ' '); }
+  function qty(n) { return n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }); }
+  function r2(n) { return Math.round(n * 100) / 100; }
+  function num(v) { var n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; }
+  function frDate(iso) { var p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; }
+  function range(it) { return it.hi ? it.lo + '–' + it.hi + ' €' : ''; }
+
+  /* ---------- panneaux ---------- */
+  function priceBox(it, unit) {
+    return '<label class="pr">Prix <input type="number" inputmode="decimal" step="0.5" min="0" id="pr-' + it.id + '" data-pr="' + it.id + '" value="' + state.pr[it.id] + '"> ' + unit + (it.hi ? ' <span class="rg">fourchette ' + range(it) + '</span>' : '') + '</label>';
+  }
+  function itemRow(it) {
+    var q = state.q[it.id] || '';
+    var right = it.m2
+      ? '<div class="m2"><input type="number" inputmode="decimal" min="0" step="0.5" id="q-' + it.id + '" data-q="' + it.id + '" value="' + q + '" placeholder="m²" aria-label="Surface en m² : ' + esc(it.n) + '"></div>'
+      : '<div class="step"><button type="button" data-step="' + it.id + '" data-d="-1" aria-label="Retirer : ' + esc(it.n) + '">−</button><input type="number" inputmode="numeric" min="0" step="1" id="q-' + it.id + '" data-q="' + it.id + '" value="' + (q || 0) + '" aria-label="Quantité : ' + esc(it.n) + '"><button type="button" data-step="' + it.id + '" data-d="1" aria-label="Ajouter : ' + esc(it.n) + '">+</button></div>';
+    return '<div class="item"><div class="info"><div class="nm">' + esc(it.n) + '</div>' + (it.s ? '<div class="sb">' + esc(it.s) + '</div>' : '') + priceBox(it, it.m2 ? '€/m²' : '€') + '</div>' + right + '</div>';
+  }
+  function buildCat(k) {
+    var h = '';
+    CATS[k].groups.forEach(function (g) {
+      if (g.t) h += '<div class="grp">' + esc(g.t) + '</div>';
+      g.items.forEach(function (it) { h += itemRow(it); });
+    });
+    return h;
+  }
+  function renderPeinture() {
+    var h = '<div class="grp">Pièces (par m²)</div>';
+    state.rooms.forEach(function (r, i) {
+      h += '<div class="room"><div class="rt"><div class="field"><label for="n-' + r.id + '">Pièce ' + (i + 1) + '</label><input class="t" id="n-' + r.id + '" data-room="' + r.id + '" data-f="name" value="' + esc(r.name) + '" placeholder="Salon, chambre, couloir…" autocomplete="off"></div>';
+      h += '<button class="x" type="button" data-del="' + r.id + '" aria-label="Supprimer la pièce ' + esc(r.name || (i + 1)) + '">×</button></div><div class="three">';
+      [['pl', 'Plafond m²'], ['mu', 'Mur simple m²'], ['mp', 'Mur prépa. m²']].forEach(function (f) {
+        h += '<div class="field"><label for="' + f[0] + '-' + r.id + '">' + f[1] + '</label><input id="' + f[0] + '-' + r.id + '" data-room="' + r.id + '" data-f="' + f[0] + '" type="number" inputmode="decimal" min="0" step="0.5" value="' + (num(r[f[0]]) || '') + '" placeholder="0"></div>';
+      });
+      h += '</div></div>';
+    });
+    h += '<div class="actions"><button class="btn dark" id="add-room" type="button">+ Ajouter une pièce</button></div>';
+    h += '<div class="grp">Tarifs peinture (par m²)</div>';
+    RATES.forEach(function (r) {
+      h += '<div class="item"><div class="info"><div class="nm">' + esc(r.n) + '</div>' + (r.s ? '<div class="sb">' + esc(r.s) + '</div>' : '') + priceBox(r, '€/m²') + '</div></div>';
+    });
+    CATS.peinture.groups.forEach(function (g) { h += '<div class="grp">' + esc(g.t) + '</div>'; g.items.forEach(function (it) { h += itemRow(it); }); });
+    h += COND;
+    document.getElementById('p-peinture').innerHTML = h;
+  }
+  function renderPanels() {
+    ['montage', 'demontage', 'carrelage'].forEach(function (k) { document.getElementById('p-' + k).innerHTML = buildCat(k) + COND; });
+    renderPeinture();
+  }
+
+  /* ---------- calcul ---------- */
+  function catRows(k) {
+    var rows = [];
+    CATS[k].groups.forEach(function (g) { g.items.forEach(function (it) {
+      var q = num(state.q[it.id]); if (!q) return;
+      var pu = num(state.pr[it.id]);
+      rows.push({ label: it.l || (it.s && k === 'montage' && /lit|cuisine/i.test(it.n) ? it.n + ' (' + it.s + ')' : it.n), q: q, unit: it.m2 ? 'm²' : 'u', pu: pu, t: r2(q * pu) });
+    }); });
+    return rows;
+  }
+  function compute() {
+    var secs = [], used = {}, total = 0;
+    function push(name, rows, cat) {
+      if (!rows.length) return;
+      var sub = r2(rows.reduce(function (a, r) { return a + r.t; }, 0));
+      secs.push({ name: name, rows: rows, sub: sub }); total += sub; if (cat) used[cat] = 1;
+    }
+    push('Montage', catRows('montage'), 'montage');
+    push('Démontage', catRows('demontage'), 'demontage');
+    push('Carrelage', catRows('carrelage'), 'carrelage');
+    var roomNames = [];
+    state.rooms.forEach(function (r) {
+      var rows = [];
+      RATES.forEach(function (rt) { var q = num(r[rt.f]); if (q) rows.push({ label: rt.l, q: q, unit: 'm²', pu: num(state.pr[rt.id]), t: r2(q * num(state.pr[rt.id])) }); });
+      if (rows.length) roomNames.push((r.name || '').trim() || 'Pièce');
+      push((r.name || '').trim() || 'Pièce', rows, 'peinture');
+    });
+    push('Peinture - éléments', catRows('peinture'), 'peinture');
+    total = r2(total);
+    if (total > 0 && total < 50) {
+      var d = r2(50 - total);
+      secs.push({ name: 'Forfait minimum', rows: [{ label: 'Complément pour atteindre le forfait minimum d\'intervention', q: 1, unit: 'u', pu: d, t: d }], sub: d });
+      total = 50;
+    }
+    return { secs: secs, total: total, used: used, roomNames: roomNames };
+  }
+  function join(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' et ' + a[a.length - 1]; }
+  function objetAuto(c) {
+    if (state.objet && state.objet.trim()) return state.objet.trim();
+    var keys = ['montage', 'demontage', 'carrelage', 'peinture'].filter(function (k) { return c.used[k]; });
+    if (!keys.length) return 'travaux';
+    if (keys.length === 1 && keys[0] === 'peinture' && c.roomNames.length) return 'travaux de peinture intérieure - ' + join(c.roomNames);
+    return 'travaux de ' + join(keys.map(function (k) { return CATS[k].label; }));
+  }
+  function numberAuto() { return (state.number && state.number.trim()) || 'D-' + String(state.date || todayIso()).split('-').join('') + '-01'; }
+
+  /* ---------- rendu du devis ---------- */
+  function renderSheet() {
+    var c = compute(), cl = state.client, h = '', lines = 0;
+    h += '<div class="stripe2"></div><div class="head"><div><div class="eyebrow">MAIN D\'ŒUVRE SEULE · MATÉRIEL NON INCLUS</div><div class="brand">RENO &amp; <span>MONTAGE</span></div><div class="small">Peinture · Carrelage · Montage · Démontage<br>Nasredine Sliman · Nanterre (92)</div></div>';
+    h += '<div class="meta small"><div class="doc">DEVIS</div><div>N° ' + esc(numberAuto()) + '</div><div>Date : ' + esc(frDate(state.date)) + '</div><div>Validité : ' + esc(num(state.validity) || 30) + ' jours</div></div></div><div class="main">';
+    h += '<div class="parties"><div class="party"><div class="lbl">PRESTATAIRE</div><b>Reno &amp; Montage</b><br>Nasredine Sliman<br>Nanterre (92) - Île-de-France</div>';
+    h += '<div class="party"><div class="lbl">CLIENT</div><b>' + (esc(cl.name) || '&nbsp;') + '</b><br>' + (esc(cl.l1) || '&nbsp;') + '<br>' + (esc(cl.l2) || '&nbsp;') + '</div></div>';
+    h += '<div><p class="objet">Objet : ' + esc(objetAuto(c)) + '</p><div class="objet-sub">Main d\'œuvre uniquement · Matériel et fournitures non inclus</div></div>';
+    h += '<div class="tbl"><div class="tr th"><div>DÉSIGNATION</div><div>QTÉ</div><div>UNITÉ</div><div>PRIX UNIT.</div><div>TOTAL</div></div>';
+    if (!c.secs.length) h += '<div class="empty">Choisis des prestations dans les onglets pour remplir le devis.</div>';
+    c.secs.forEach(function (s) {
+      h += '<div class="sec">' + esc(s.name) + '</div>';
+      s.rows.forEach(function (r, i) { lines += 1; h += '<div class="tr' + (i < s.rows.length - 1 ? ' line' : '') + '"><div>' + esc(r.label) + '</div><div>' + qty(r.q) + '</div><div>' + r.unit + '</div><div>' + money(r.pu) + '</div><div>' + money(r.t) + '</div></div>'; });
+      h += '<div class="sub"><span>Sous-total ' + esc(s.name) + '</span><span>' + money(s.sub) + '</span></div>';
+    });
+    h += '</div><div class="totalbox"><span>TOTAL À PAYER</span><b>' + money(c.total) + '</b></div><div class="tva">TVA non applicable, art. 293 B du CGI</div>';
+    h += '<div class="cnd"><h3>CONDITIONS</h3><ul><li>Fournitures et matériel (peinture, enduit, bâches, etc.) à la charge du client.</li><li>Forfait minimum d\'intervention : 50 €.</li><li>Travaux supplémentaires éventuels, après accord du client : 25 à 40 €/h.</li><li>Devis valable ' + esc(num(state.validity) || 30) + ' jours à compter de sa date d\'émission.</li></ul></div>';
+    h += '<div class="sign"><div>Le prestataire - Date et signature</div><div>Le client - « Bon pour accord », date et signature</div></div></div>';
+    h += '<div class="foot">Reno &amp; Montage · Nasredine Sliman · Nanterre (92) · Merci de votre confiance</div>';
+    document.getElementById('sheet').innerHTML = h;
+    document.getElementById('tot').textContent = money(c.total).replace(',00', '');
+    document.getElementById('cnt').textContent = lines + (lines > 1 ? ' lignes sélectionnées' : ' ligne sélectionnée');
+    document.getElementById('d-number').placeholder = numberAuto();
+    document.getElementById('d-objet').placeholder = objetAuto(c);
+  }
+
+  /* ---------- événements ---------- */
+  function setPath(p, v) { var a = p.split('.'); if (a.length === 2) state[a[0]][a[1]] = v; else state[p] = v; }
+  function getPath(p) { var a = p.split('.'); return a.length === 2 ? state[a[0]][a[1]] : state[p]; }
+  function fillStatic() { document.querySelectorAll('[data-k]').forEach(function (el) { var v = getPath(el.getAttribute('data-k')); el.value = v == null ? '' : v; }); }
+  function changed() { save(); renderSheet(); }
+
+  document.addEventListener('input', function (e) {
+    var el = e.target;
+    if (el.hasAttribute('data-k')) setPath(el.getAttribute('data-k'), el.value);
+    else if (el.hasAttribute('data-pr')) state.pr[el.getAttribute('data-pr')] = el.value;
+    else if (el.hasAttribute('data-q')) state.q[el.getAttribute('data-q')] = el.value;
+    else if (el.hasAttribute('data-room')) { var id = el.getAttribute('data-room'), f = el.getAttribute('data-f'); state.rooms.forEach(function (r) { if (r.id === id) r[f] = el.value; }); }
+    else return;
+    changed();
+  });
+  document.addEventListener('click', function (e) {
+    var st = e.target.closest('[data-step]');
+    if (st) {
+      var id = st.getAttribute('data-step'), v = Math.max(0, Math.round(num(state.q[id])) + parseInt(st.getAttribute('data-d'), 10));
+      state.q[id] = v; document.getElementById('q-' + id).value = v; changed(); return;
+    }
+    var del = e.target.closest('[data-del]');
+    if (del) { var rid = del.getAttribute('data-del'); state.rooms = state.rooms.filter(function (r) { return r.id !== rid; }); save(); renderPeinture(); renderSheet(); return; }
+    if (e.target.id === 'add-room') {
+      state.rooms.push({ id: nid(), name: '', pl: 0, mu: 0, mp: 0 }); save(); renderPeinture(); renderSheet();
+      var ins = document.querySelectorAll('#p-peinture [data-f="name"]'); if (ins.length) ins[ins.length - 1].focus();
+    }
+  });
+
+  var tabs = document.querySelectorAll('#tabs button');
+  function show(name) {
+    tabs.forEach(function (b) { var on = b.getAttribute('data-tab') === name; b.setAttribute('aria-selected', on ? 'true' : 'false'); if (on && b.scrollIntoView) { try { b.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (x) {} } });
+    document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('on', p.id === 'p-' + name); });
+    window.scrollTo(0, 0);
+  }
+  tabs.forEach(function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-tab')); }); });
+
+  document.getElementById('pdf').addEventListener('click', function () { window.print(); });
+  var statusEl = document.getElementById('status'), fb = document.getElementById('fallback');
+  function quoteText() {
+    var c = compute(), cl = state.client, t = [];
+    t.push('DEVIS ' + numberAuto() + ' - Reno & Montage', 'Date : ' + frDate(state.date) + ' · Validité : ' + (num(state.validity) || 30) + ' jours', '');
+    t.push('Client : ' + [cl.name, cl.l1, cl.l2].filter(Boolean).join(', '), 'Objet : ' + objetAuto(c), 'Main d\'œuvre uniquement, matériel non inclus');
+    c.secs.forEach(function (s) { t.push('', s.name.toUpperCase()); s.rows.forEach(function (r) { t.push('- ' + r.label + ' : ' + qty(r.q) + ' ' + r.unit + ' × ' + money(r.pu) + ' = ' + money(r.t)); }); t.push('Sous-total ' + s.name + ' : ' + money(s.sub)); });
+    t.push('', 'TOTAL À PAYER : ' + money(c.total), 'TVA non applicable, art. 293 B du CGI', 'Fournitures et matériel à la charge du client. Forfait minimum d\'intervention : 50 €. Travaux supplémentaires après accord : 25 à 40 €/h.');
+    return t.join('\n');
+  }
+  document.getElementById('copy').addEventListener('click', function () {
+    var text = quoteText();
+    function fallback() { fb.hidden = false; fb.value = text; fb.focus(); fb.select(); statusEl.textContent = 'Sélectionne le texte ci-dessous et copie-le.'; }
+    try { navigator.clipboard.writeText(text).then(function () { fb.hidden = true; statusEl.textContent = 'Devis copié.'; }, fallback); } catch (e) { fallback(); }
+  });
+
+  var rt = null, rb = document.getElementById('reset');
+  rb.addEventListener('click', function () {
+    if (!rt) { rb.textContent = 'Confirmer ?'; rt = setTimeout(function () { rb.textContent = 'Réinit.'; rt = null; }, 4000); return; }
+    clearTimeout(rt); rt = null; rb.textContent = 'Réinit.';
+    state = { client: { name: '', l1: '', l2: '' }, date: todayIso(), number: '', objet: '', validity: 30, pr: state.pr, q: {}, rooms: [{ id: nid(), name: '', pl: 0, mu: 0, mp: 0 }] };
+    save(); fillStatic(); renderPanels(); renderSheet(); show('client');
+  });
+
+  fillStatic(); renderPanels(); renderSheet(); show('montage');
+})();
+if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
+</script>
+</body>
+</html>
