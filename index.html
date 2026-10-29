@@ -85,6 +85,8 @@ button { cursor: pointer; }
 .room .three .field { margin-top: 0; }
 .room .three label { font-size: 10.5px; letter-spacing: .8px; }
 .room .three input { height: 46px; border: 1px solid var(--line); border-radius: 6px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 17px; width: 100%; padding: 0 4px; }
+.room .fo { margin-top: 10px; }
+.room .fo input { height: 46px; border: 1px solid var(--line); border-radius: 6px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 17px; width: 100%; padding: 0 4px; }
 .x { width: 50px; height: 50px; flex-shrink: 0; border: 1px solid var(--ink); border-radius: 6px; background: transparent; font-size: 24px; }
 .btn { min-height: 50px; padding: 0 20px; border-radius: 6px; border: 2px solid var(--ink); background: transparent; font-weight: 600; font-size: 16px; }
 .btn.fill { background: var(--orange); border-color: var(--orange); color: var(--ink); }
@@ -345,7 +347,7 @@ button { cursor: pointer; }
       [['pl', 'Plafond m²'], ['mu', 'Mur simple m²'], ['mp', 'Mur prépa. m²']].forEach(function (f) {
         h += '<div class="field"><label for="' + f[0] + '-' + r.id + '">' + f[1] + '</label><input id="' + f[0] + '-' + r.id + '" data-room="' + r.id + '" data-f="' + f[0] + '" type="number" inputmode="decimal" min="0" step="0.5" value="' + (num(r[f[0]]) || '') + '" placeholder="0"></div>';
       });
-      h += '</div></div>';
+      h += '</div><div class="field fo"><label for="fo-' + r.id + '">Fournitures € (prix facturé)</label><input id="fo-' + r.id + '" data-room="' + r.id + '" data-f="fo" type="number" inputmode="decimal" min="0" step="0.01" value="' + (num(r.fo) || '') + '" placeholder="0"></div></div>';
     });
     h += '<div class="actions"><button class="btn dark" id="add-room" type="button">+ Ajouter une pièce</button></div>';
     h += '<div class="grp">Tarifs peinture (par m²)</div>';
@@ -372,7 +374,7 @@ button { cursor: pointer; }
     return rows;
   }
   function compute() {
-    var secs = [], used = {}, total = 0;
+    var secs = [], used = {}, total = 0, hasFo = false;
     function push(name, rows, cat) {
       if (!rows.length) return;
       var sub = r2(rows.reduce(function (a, r) { return a + r.t; }, 0));
@@ -385,6 +387,7 @@ button { cursor: pointer; }
     state.rooms.forEach(function (r) {
       var rows = [];
       RATES.forEach(function (rt) { var q = num(r[rt.f]); if (q) rows.push({ label: rt.l, q: q, unit: 'm²', pu: num(state.pr[rt.id]), t: r2(q * num(state.pr[rt.id])) }); });
+      var fo = num(r.fo); if (fo) { rows.push({ label: 'Fournitures (peinture, enduit, petit matériel)', q: 1, unit: 'u', pu: r2(fo), t: r2(fo) }); hasFo = true; }
       if (rows.length) roomNames.push((r.name || '').trim() || 'Pièce');
       push((r.name || '').trim() || 'Pièce', rows, 'peinture');
     });
@@ -395,7 +398,7 @@ button { cursor: pointer; }
       secs.push({ name: 'Forfait minimum', rows: [{ label: 'Complément pour atteindre le forfait minimum d\'intervention', q: 1, unit: 'u', pu: d, t: d }], sub: d });
       total = 50;
     }
-    return { secs: secs, total: total, used: used, roomNames: roomNames };
+    return { secs: secs, total: total, used: used, roomNames: roomNames, hasFo: hasFo };
   }
   function join(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' et ' + a[a.length - 1]; }
   function objetAuto(c) {
@@ -410,11 +413,11 @@ button { cursor: pointer; }
   /* ---------- rendu du devis ---------- */
   function renderSheet() {
     var c = compute(), cl = state.client, h = '', lines = 0;
-    h += '<div class="stripe2"></div><div class="head"><div><div class="eyebrow">MAIN D\'ŒUVRE SEULE · MATÉRIEL NON INCLUS</div><div class="brand">RENO &amp; <span>MONTAGE</span></div><div class="small">Peinture · Carrelage · Montage · Démontage<br>Nasredine Sliman · Nanterre (92)</div></div>';
+    h += '<div class="stripe2"></div><div class="head"><div><div class="eyebrow">' + (c.hasFo ? 'MAIN D\'ŒUVRE ET FOURNITURES' : 'MAIN D\'ŒUVRE SEULE · MATÉRIEL NON INCLUS') + '</div><div class="brand">RENO &amp; <span>MONTAGE</span></div><div class="small">Peinture · Carrelage · Montage · Démontage<br>Nasredine Sliman · Nanterre (92)</div></div>';
     h += '<div class="meta small"><div class="doc">DEVIS</div><div>N° ' + esc(numberAuto()) + '</div><div>Date : ' + esc(frDate(state.date)) + '</div><div>Validité : ' + esc(num(state.validity) || 30) + ' jours</div></div></div><div class="main">';
     h += '<div class="parties"><div class="party"><div class="lbl">PRESTATAIRE</div><b>Reno &amp; Montage</b><br>Nasredine Sliman<br>Nanterre (92) - Île-de-France</div>';
     h += '<div class="party"><div class="lbl">CLIENT</div><b>' + (esc(cl.name) || '&nbsp;') + '</b><br>' + (esc(cl.l1) || '&nbsp;') + '<br>' + (esc(cl.l2) || '&nbsp;') + '</div></div>';
-    h += '<div><p class="objet">Objet : ' + esc(objetAuto(c)) + '</p><div class="objet-sub">Main d\'œuvre uniquement · Matériel et fournitures non inclus</div></div>';
+    h += '<div><p class="objet">Objet : ' + esc(objetAuto(c)) + '</p><div class="objet-sub">' + (c.hasFo ? 'Main d\'œuvre et fournitures indiquées ci-dessous' : 'Main d\'œuvre uniquement · Matériel et fournitures non inclus') + '</div></div>';
     h += '<div class="tbl"><div class="tr th"><div>DÉSIGNATION</div><div>QTÉ</div><div>UNITÉ</div><div>PRIX UNIT.</div><div>TOTAL</div></div>';
     if (!c.secs.length) h += '<div class="empty">Choisis des prestations dans les onglets pour remplir le devis.</div>';
     c.secs.forEach(function (s) {
@@ -423,7 +426,7 @@ button { cursor: pointer; }
       h += '<div class="sub"><span>Sous-total ' + esc(s.name) + '</span><span>' + money(s.sub) + '</span></div>';
     });
     h += '</div><div class="totalbox"><span>TOTAL À PAYER</span><b>' + money(c.total) + '</b></div><div class="tva">TVA non applicable, art. 293 B du CGI</div>';
-    h += '<div class="cnd"><h3>CONDITIONS</h3><ul><li>Fournitures et matériel (peinture, enduit, bâches, etc.) à la charge du client.</li><li>Forfait minimum d\'intervention : 50 €.</li><li>Travaux supplémentaires éventuels, après accord du client : 25 à 40 €/h.</li><li>Devis valable ' + esc(num(state.validity) || 30) + ' jours à compter de sa date d\'émission.</li></ul></div>';
+    h += '<div class="cnd"><h3>CONDITIONS</h3><ul><li>' + (c.hasFo ? 'Fournitures facturées aux montants indiqués ; tout autre matériel reste à la charge du client.' : 'Fournitures et matériel (peinture, enduit, bâches, etc.) à la charge du client.') + '</li><li>Forfait minimum d\'intervention : 50 €.</li><li>Travaux supplémentaires éventuels, après accord du client : 25 à 40 €/h.</li><li>Devis valable ' + esc(num(state.validity) || 30) + ' jours à compter de sa date d\'émission.</li></ul></div>';
     h += '<div class="sign"><div>Le prestataire - Date et signature</div><div>Le client - « Bon pour accord », date et signature</div></div></div>';
     h += '<div class="foot">Reno &amp; Montage · Nasredine Sliman · Nanterre (92) · Merci de votre confiance</div>';
     document.getElementById('sheet').innerHTML = h;
@@ -475,9 +478,9 @@ button { cursor: pointer; }
   function quoteText() {
     var c = compute(), cl = state.client, t = [];
     t.push('DEVIS ' + numberAuto() + ' - Reno & Montage', 'Date : ' + frDate(state.date) + ' · Validité : ' + (num(state.validity) || 30) + ' jours', '');
-    t.push('Client : ' + [cl.name, cl.l1, cl.l2].filter(Boolean).join(', '), 'Objet : ' + objetAuto(c), 'Main d\'œuvre uniquement, matériel non inclus');
+    t.push('Client : ' + [cl.name, cl.l1, cl.l2].filter(Boolean).join(', '), 'Objet : ' + objetAuto(c), (c.hasFo ? 'Main d\'œuvre et fournitures indiquées' : 'Main d\'œuvre uniquement, matériel non inclus'));
     c.secs.forEach(function (s) { t.push('', s.name.toUpperCase()); s.rows.forEach(function (r) { t.push('- ' + r.label + ' : ' + qty(r.q) + ' ' + r.unit + ' × ' + money(r.pu) + ' = ' + money(r.t)); }); t.push('Sous-total ' + s.name + ' : ' + money(s.sub)); });
-    t.push('', 'TOTAL À PAYER : ' + money(c.total), 'TVA non applicable, art. 293 B du CGI', 'Fournitures et matériel à la charge du client. Forfait minimum d\'intervention : 50 €. Travaux supplémentaires après accord : 25 à 40 €/h.');
+    t.push('', 'TOTAL À PAYER : ' + money(c.total), 'TVA non applicable, art. 293 B du CGI', (c.hasFo ? 'Fournitures facturées aux montants indiqués. ' : 'Fournitures et matériel à la charge du client. ') + 'Forfait minimum d\'intervention : 50 €. Travaux supplémentaires après accord : 25 à 40 €/h.');
     return t.join('\n');
   }
   document.getElementById('copy').addEventListener('click', function () {
